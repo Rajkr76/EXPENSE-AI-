@@ -1,0 +1,48 @@
+name: Build Android APK and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers workflow when you push a tag like 'v1.0.0'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to create GitHub Releases
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17' # Android builds require Java 17
+
+      - name: Install Dependencies
+        working-directory: ./ExpenseAI
+        run: npm install
+
+      - name: Expo Prebuild (Generate Android Project)
+        working-directory: ./ExpenseAI
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build APK (Gradle)
+        working-directory: ./ExpenseAI/android
+        run: ./gradlew assembleRelease
+
+      - name: Create GitHub Release and Upload APK
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./ExpenseAI/android/app/build/outputs/apk/release/app-release.apk
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true

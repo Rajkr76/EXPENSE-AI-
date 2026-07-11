@@ -1,0 +1,38 @@
+# Node dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+.venv
+
+# Expo / React Native
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Environment Variables (CRITICAL)
+.env
+*.env
+backend/.env
+ExpenseAI/.env
+
+# macOS
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
