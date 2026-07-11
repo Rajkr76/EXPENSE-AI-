@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
+    borderBottomColor: theme.colors.border,
   },
   closeBtn: {
     padding: theme.spacing.xs,
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     padding: theme.spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.borderLight,
+    borderTopColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
   },
   inputBox: {
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   sendBtnGradient: {
     width: 40,
     height: 40,
-    borderRadius: theme.radius.full,
+    borderRadius: theme.radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
   }

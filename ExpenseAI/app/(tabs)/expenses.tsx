@@ -96,7 +96,7 @@ export default function ExpensesScreen() {
             <View key={date} style={styles.dateGroup}>
               <Text style={styles.dateHeader}>{formatDateHeading(date)}</Text>
               <View style={styles.transactionsList}>
-                {groupedExpenses[date].map((expense, index) => {
+                {groupedExpenses[date].map((expense: any, index: number) => {
                   const category = CATEGORIES.find(c => c.id === expense.category_id) || CATEGORIES.find(c => c.id === 'other_expense')!;
                   return (
                     <RecentTransactionItem 

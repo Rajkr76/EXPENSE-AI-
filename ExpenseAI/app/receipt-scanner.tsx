@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: theme.radius.xl,
     overflow: 'hidden',
-    ...theme.shadows.tier2,
+    ...theme.shadows.tier1,
   },
   scanBtnGradient: {
     flexDirection: 'row',

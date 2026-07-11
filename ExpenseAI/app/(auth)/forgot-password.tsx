@@ -106,7 +106,7 @@ export default function ForgotPasswordScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Reset Code</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { letterSpacing: 4 }]}
                   placeholder="000000"
                   placeholderTextColor={theme.colors.onSurfaceTertiary}
                   keyboardType="number-pad"
@@ -114,7 +114,6 @@ export default function ForgotPasswordScreen() {
                   value={code}
                   onChangeText={setCode}
                   textAlign="center"
-                  letterSpacing={4}
                 />
               </View>
               

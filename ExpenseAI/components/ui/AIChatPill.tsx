@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     bottom: 150, // Position well above the tab bar + FAB
     left: theme.spacing.lg,
     right: theme.spacing.lg,
-    ...theme.shadows.tier2,
+    ...theme.shadows.tier1,
     zIndex: 10,
   },
   gradient: {

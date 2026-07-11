@@ -29,7 +29,7 @@ export default function ProfileScreen() {
       const headers = ['Date', 'Title', 'Merchant', 'Category ID', 'Amount'];
       const csvRows = [headers.join(',')];
       
-      allExpenses.forEach(exp => {
+      allExpenses.forEach((exp: any) => {
         // Escape quotes and wrap in quotes to handle commas in text
         const safeTitle = `"${(exp.title || '').replace(/"/g, '""')}"`;
         const safeMerchant = `"${(exp.merchant || '').replace(/"/g, '""')}"`;
@@ -47,8 +47,8 @@ export default function ProfileScreen() {
       const csvString = csvRows.join('\n');
       
       // 3. Save to device file system
-      const fileUri = `${FileSystem.documentDirectory}ExpenseAI_Export_${new Date().toISOString().split('T')[0]}.csv`;
-      await FileSystem.writeAsStringAsync(fileUri, csvString, { encoding: FileSystem.EncodingType.UTF8 });
+      const fileUri = `${(FileSystem as any).documentDirectory}ExpenseAI_Export_${new Date().toISOString().split('T')[0]}.csv`;
+      await FileSystem.writeAsStringAsync(fileUri, csvString, { encoding: (FileSystem as any).EncodingType.UTF8 });
       
       // 4. Share file
       const isAvailable = await Sharing.isAvailableAsync();
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   avatarContainer: {
     width: 100,
     height: 100,
-    borderRadius: theme.radius.full,
+    borderRadius: theme.radius.pill,
     backgroundColor: theme.colors.surfaceTertiary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
+    borderBottomColor: theme.colors.border,
   },
   menuItemLeft: {
     flexDirection: 'row',

@@ -211,6 +211,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  modalTitle: {
+    fontSize: theme.typography.scale.lg,
+    fontFamily: theme.typography.semiBoldFontFamily,
+    color: theme.colors.onSurface,
+    marginLeft: theme.spacing.md,
+  },
   rowTitle: {
     fontSize: theme.typography.scale.base,
     fontFamily: theme.typography.semiBoldFontFamily,

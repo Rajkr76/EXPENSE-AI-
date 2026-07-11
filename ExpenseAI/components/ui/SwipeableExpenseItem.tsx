@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     color: theme.colors.onSurface,
   },
   date: {
-    fontSize: theme.typography.scale.xs,
+    fontSize: theme.typography.scale.sm,
     fontFamily: theme.typography.textFontFamily,
     color: theme.colors.onSurfaceTertiary,
   },

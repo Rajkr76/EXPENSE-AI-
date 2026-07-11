@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.semiBoldFontFamily,
   },
   date: {
-    fontSize: theme.typography.scale.xs,
+    fontSize: theme.typography.scale.sm,
     fontFamily: theme.typography.textFontFamily,
     color: theme.colors.onSurfaceTertiary,
   },

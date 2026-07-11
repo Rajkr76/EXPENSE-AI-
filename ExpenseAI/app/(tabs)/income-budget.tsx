@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: theme.radius['2xl'],
-    borderTopRightRadius: theme.radius['2xl'],
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
     padding: theme.spacing.xl,
     paddingBottom: 40,
   },
