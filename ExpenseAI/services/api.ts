@@ -2,10 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-// For Android emulator to access localhost backend, use 10.0.2.2.
-// For iOS simulator, localhost works.
-// For physical devices, you must use your computer's local IP address (e.g. 192.168.x.x).
-const BASE_URL = Platform.OS === 'android' ? 'http://192.168.1.8:8000/api' : 'http://localhost:8000/api';
+const BASE_URL = 'https://expense-ai-3mmo.onrender.com/api';
 
 export const api = axios.create({
   baseURL: BASE_URL,
