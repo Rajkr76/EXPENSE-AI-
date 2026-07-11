@@ -9,6 +9,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 60000, // 60 seconds to allow Render free tier to wake up
 });
 
 // Interceptor to add auth token
@@ -25,6 +26,19 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Add a response interceptor to catch timeouts
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      error.message = 'The server is waking up. Please try again in a few seconds.';
+    } else if (error.message === 'Network Error') {
+      error.message = 'Network Error. Please check your internet connection.';
+    }
+    return Promise.reject(error);
+  }
 );
 
 // Services
