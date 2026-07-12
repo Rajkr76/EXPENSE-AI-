@@ -1,7 +1,15 @@
 name: Build Android APK and Release
 
 on:
-  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
 
 jobs:
   build-and-release:
@@ -40,7 +48,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: ./ExpenseAI/android/app/build/outputs/apk/release/app-release.apk
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: Release ${{ github.event.inputs.tag_name || github.ref_name }}
           draft: false
           prerelease: false
           generate_release_notes: true
