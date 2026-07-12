@@ -7,7 +7,7 @@ import { CATEGORIES } from '../constants/categories';
 import { X, Sparkle, Camera, Check, Image as ImageIcon } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import * as SecureStore from 'expo-secure-store';
+import { api, expenseService } from '../services/api';
 
 export default function ReceiptScannerScreen() {
   const router = useRouter();
@@ -51,7 +51,6 @@ export default function ReceiptScannerScreen() {
   const processImage = async (asset: ImagePicker.ImagePickerAsset) => {
     setIsScanning(true);
     try {
-      const token = await SecureStore.getItemAsync('userToken');
       const formData = new FormData();
       
       formData.append('file', {
@@ -60,17 +59,13 @@ export default function ReceiptScannerScreen() {
         type: 'image/jpeg',
       } as any);
 
-      const response = await fetch('http://192.168.1.8:8000/api/ai/scan-receipt', {
-        method: 'POST',
+      const response = await api.post('/ai/scan-receipt', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData,
       });
-
-      if (!response.ok) throw new Error('Failed to scan receipt');
       
-      const data = await response.json();
+      const data = response.data;
       
       setScannedData(true);
       setAmount(data.amount ? data.amount.toString() : '');
@@ -95,25 +90,14 @@ export default function ReceiptScannerScreen() {
     
     setIsSaving(true);
     try {
-      const token = await SecureStore.getItemAsync('userToken');
-      
-      const response = await fetch('http://192.168.1.8:8000/api/expenses/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title: merchant,
-          amount: parseFloat(amount),
-          merchant: merchant,
-          category_id: selectedCategory || 'other_expense',
-          date: new Date().toISOString().split('T')[0],
-          notes: 'Scanned via AI receipt scanner',
-        }),
+      await expenseService.addExpense({
+        title: merchant,
+        amount: parseFloat(amount),
+        merchant: merchant,
+        category_id: selectedCategory || 'other_expense',
+        date: new Date().toISOString().split('T')[0],
+        notes: 'Scanned via AI receipt scanner',
       });
-      
-      if (!response.ok) throw new Error('Failed to save');
       
       alert('Expense saved!');
       router.replace('/(tabs)');

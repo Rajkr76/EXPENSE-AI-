@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { theme } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
+import { authService, api } from '../../services/api';
 import { EnvelopeSimple, Lock, Eye, EyeSlash } from 'phosphor-react-native';
 
 export default function LoginScreen() {
@@ -26,35 +27,23 @@ export default function LoginScreen() {
     setError('');
     
     try {
-      // Create form data for OAuth2
-      const formData = new FormData();
-      formData.append('username', email);
-      formData.append('password', password);
+      // Use the centralized api service (auto-detects local vs production URL)
+      const data = await authService.login(
+        `username=${encodeURIComponent(email.trim().toLowerCase())}&password=${encodeURIComponent(password)}`
+      );
       
-      const response = await fetch('http://192.168.1.8:8000/api/auth/login', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Invalid credentials');
-      }
-      
-      const data = await response.json();
-      
-      // Get user info
-      const userResponse = await fetch('http://192.168.1.8:8000/api/auth/me', {
+      // Get user info using the api service
+      const userResponse = await api.get('/auth/me', {
         headers: {
           'Authorization': `Bearer ${data.access_token}`
         }
       });
       
-      const userData = await userResponse.json();
-      
-      await login(data.access_token, userData);
+      await login(data.access_token, userResponse.data);
       // The router will automatically redirect to /(tabs) via _layout.tsx
     } catch (err: any) {
-      setError(err.message || 'Failed to login');
+      const msg = err.response?.data?.detail || err.message || 'Failed to login';
+      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setIsLoading(false);
     }

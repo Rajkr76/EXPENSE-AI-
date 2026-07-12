@@ -1,8 +1,36 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-const BASE_URL = 'https://expense-ai-3mmo.onrender.com/api';
+// Determine the API base URL based on environment
+function getBaseUrl(): string {
+  // In development (Expo Go), use local network IP
+  const isDev = __DEV__;
+  
+  if (isDev) {
+    // When running in Expo Go on a physical device, use your computer's local IP
+    // The debuggerHost from Expo tells us the dev machine's IP
+    const debuggerHost = Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoGo?.debuggerHost;
+    const localIp = debuggerHost?.split(':')[0];
+    
+    if (localIp) {
+      return `http://${localIp}:8000/api`;
+    }
+    // Fallback for Android emulator
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:8000/api';
+    }
+    // Fallback for iOS simulator
+    return 'http://localhost:8000/api';
+  }
+  
+  // Production APK → always use Render
+  return 'https://expense-ai-3mmo.onrender.com/api';
+}
+
+const BASE_URL = getBaseUrl();
+console.log('[API] Using base URL:', BASE_URL);
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -28,14 +56,14 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Add a response interceptor to catch timeouts
+// Add a response interceptor to catch timeouts and network errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
       error.message = 'The server is waking up. Please try again in a few seconds.';
     } else if (error.message === 'Network Error') {
-      error.message = 'Network Error. Please check your internet connection.';
+      error.message = 'Cannot connect to server. Please check your internet connection and try again.';
     }
     return Promise.reject(error);
   }

@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { theme } from '../constants/theme';
 import { CATEGORIES } from '../constants/categories';
 import { X, CalendarBlank, CaretDown } from 'phosphor-react-native';
-import * as SecureStore from 'expo-secure-store';
+import { expenseService } from '../services/api';
 
 export default function AddManualScreen() {
   const router = useRouter();
@@ -23,25 +23,14 @@ export default function AddManualScreen() {
     
     setIsLoading(true);
     try {
-      const token = await SecureStore.getItemAsync('userToken');
-      
-      const response = await fetch('http://192.168.1.8:8000/api/expenses/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title: title,
-          amount: parseFloat(amount),
-          merchant: title,
-          category_id: selectedCategory,
-          date: new Date().toISOString().split('T')[0],
-          notes: selectedCategory === 'other_expense' && customCategory ? `Custom Category: ${customCategory}` : '',
-        }),
+      await expenseService.addExpense({
+        title: title,
+        amount: parseFloat(amount),
+        merchant: title,
+        category_id: selectedCategory,
+        date: new Date().toISOString().split('T')[0],
+        notes: selectedCategory === 'other_expense' && customCategory ? `Custom Category: ${customCategory}` : '',
       });
-      
-      if (!response.ok) throw new Error('Failed to save');
       
       Alert.alert('Success', 'Expense saved!', [
         { text: 'OK', onPress: () => router.replace('/(tabs)') }

@@ -65,15 +65,23 @@ async def register_user(user: UserCreate, db: AsyncIOMotorDatabase = Depends(get
     
     # Generate 6-digit verification code
     verification_code = ''.join(random.choices(string.digits, k=6))
-    user_dict["is_verified"] = False
     user_dict["verification_code"] = verification_code
     
-    # Send email (falls back to terminal print if no SMTP setup)
-    send_email(
+    # Try to send verification email
+    email_sent = send_email(
         to_email=user.email,
         subject="ExpenseAI Verification Code",
         body=f"Welcome to ExpenseAI!\n\nYour verification code is: {verification_code}\n\nPlease enter this code in the app to verify your account."
     )
+    
+    # If email was sent successfully, require verification
+    # If email failed (e.g., SMTP blocked on Render free tier), auto-verify the user
+    if email_sent:
+        user_dict["is_verified"] = False
+        print(f"Verification email sent to {user.email}. User must verify.")
+    else:
+        user_dict["is_verified"] = True
+        print(f"SMTP unavailable. Auto-verified user {user.email}.")
 
     result = await db["users"].insert_one(user_dict)
     
@@ -148,11 +156,15 @@ async def forgot_password(
     )
     
     # Send email (falls back to terminal print if no SMTP setup)
-    send_email(
+    email_sent = send_email(
         to_email=email,
         subject="ExpenseAI Password Reset",
         body=f"You requested a password reset for ExpenseAI.\n\nYour reset code is: {reset_code}\n\nIf you did not request this, please ignore this email."
     )
+    
+    if not email_sent:
+        # If email failed, return the code in the response (for development/testing)
+        return {"message": "If this email is registered, a reset code was sent.", "debug_code": reset_code}
     
     return {"message": "If this email is registered, a reset code was sent."}
 

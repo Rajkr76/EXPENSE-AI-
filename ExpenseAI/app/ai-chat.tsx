@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { theme } from '../constants/theme';
 import { X, PaperPlaneRight, Sparkle } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as SecureStore from 'expo-secure-store';
+import { aiService } from '../services/api';
 
 export default function AIChatScreen() {
   const router = useRouter();
@@ -28,22 +28,7 @@ export default function AIChatScreen() {
     setIsLoading(true);
     
     try {
-      const token = await SecureStore.getItemAsync('userToken');
-      
-      const response = await fetch('http://192.168.1.8:8000/api/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ query: userMessage }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to get AI response');
-      }
-      
-      const data = await response.json();
+      const data = await aiService.chat(userMessage);
       
       setMessages(prev => [...prev, { 
         id: (Date.now() + 1).toString(), 

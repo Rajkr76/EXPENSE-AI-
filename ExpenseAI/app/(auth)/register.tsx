@@ -29,14 +29,28 @@ export default function RegisterScreen() {
     
     try {
       // 1. Register User
-      await authService.register({ 
+      const response = await authService.register({ 
         email: email.trim().toLowerCase(), 
         password, 
         name 
       });
       
-      // The router will redirect to verify screen
-      router.push({ pathname: '/verify', params: { email: email.trim().toLowerCase() } });
+      // If user is auto-verified (SMTP unavailable on server), go straight to login
+      if (response.is_verified) {
+        // Auto-login after registration
+        try {
+          const loginResponse = await authService.login(
+            `username=${encodeURIComponent(email.trim().toLowerCase())}&password=${encodeURIComponent(password)}`
+          );
+          await login(loginResponse.access_token, { name, email: email.trim().toLowerCase() });
+        } catch {
+          // If auto-login fails, just go to login screen
+          router.replace('/login' as any);
+        }
+      } else {
+        // Email verification required
+        router.push({ pathname: '/verify', params: { email: email.trim().toLowerCase() } });
+      }
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'An error occurred';
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
