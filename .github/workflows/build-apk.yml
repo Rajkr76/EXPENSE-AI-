@@ -34,7 +34,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./ExpenseAI
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Expo Prebuild (Generate Android Project)
         working-directory: ./ExpenseAI
