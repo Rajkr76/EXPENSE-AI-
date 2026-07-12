@@ -3,18 +3,13 @@ from typing import Optional
 from bson import ObjectId
 
 class UserBase(BaseModel):
-    name: str
-    email: EmailStr
-
-class UserCreate(UserBase):
-    password: str
+    clerk_id: str
+    name: Optional[str] = "Unknown User"
+    email: Optional[str] = "unknown@example.com"
 
 class UserInDB(UserBase):
     id: str = Field(alias="_id")
-    hashed_password: str
-    is_verified: bool = False
-    verification_code: Optional[str] = None
-    reset_code: Optional[str] = None
+    is_verified: bool = True
 
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 

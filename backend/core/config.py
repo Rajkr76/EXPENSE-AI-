@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     SMTP_SERVER: Optional[str] = "smtp.gmail.com"
     SMTP_PORT: Optional[int] = 587
 
+    CLERK_SECRET_KEY: Optional[str] = None
+
     class Config:
         env_file = ".env"
 

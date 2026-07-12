@@ -10,12 +10,12 @@ import { RecentTransactionItem } from '../../components/ui/RecentTransactionItem
 import { AIChatPill } from '../../components/ui/AIChatPill';
 import { Wallet, TrendUp, Bank, Target } from 'phosphor-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useAuth } from '../../context/AuthContext';
+import { useUser } from '@clerk/clerk-expo';
 import { expenseService, incomeService, budgetService, aiService } from '../../services/api';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoaded } = useUser();
   
   const [insight, setInsight] = useState<string>('');
   const [loadingInsight, setLoadingInsight] = useState(true);
@@ -60,10 +60,10 @@ export default function HomeScreen() {
         }
       };
 
-      if (user) {
+      if (isLoaded && user) {
         fetchData();
       }
-    }, [user])
+    }, [user, isLoaded])
   );
 
   // Calculations
@@ -105,10 +105,10 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Good morning,</Text>
-            <Text style={styles.userName}>{user?.name || 'Guest'}</Text>
+            <Text style={styles.userName}>{user?.firstName || 'Guest'}</Text>
           </View>
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase() || 'G'}</Text>
+            <Text style={styles.avatarText}>{user?.firstName?.charAt(0).toUpperCase() || 'G'}</Text>
           </View>
         </View>
 

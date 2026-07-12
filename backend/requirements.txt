@@ -11,3 +11,6 @@ google-generativeai
 python-dotenv
 email-validator
 groq
+clerk-backend-api
+pyjwt
+cryptography

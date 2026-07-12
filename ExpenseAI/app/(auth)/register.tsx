@@ -3,15 +3,16 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, Activity
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { theme } from '../../constants/theme';
-import { useAuth } from '../../context/AuthContext';
-import { authService } from '../../services/api';
 import { EnvelopeSimple, Lock, Eye, EyeSlash, User } from 'phosphor-react-native';
+import { useSignUp } from '@clerk/clerk-expo';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { signUp, setActive, isLoaded } = useSignUp();
   
   const [name, setName] = useState('');
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [code, setCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +20,8 @@ export default function RegisterScreen() {
   const [error, setError] = useState('');
 
   const handleRegister = async () => {
+    if (!isLoaded) return;
+    
     if (!name || !email || !password) {
       setError('Please fill in all fields');
       return;
@@ -28,32 +31,43 @@ export default function RegisterScreen() {
     setError('');
     
     try {
-      // 1. Register User
-      const response = await authService.register({ 
-        email: email.trim().toLowerCase(), 
-        password, 
-        name 
+      // 1. Register User in Clerk
+      await signUp.create({
+        emailAddress: email,
+        password,
+        firstName: name,
       });
-      
-      // If user is auto-verified (SMTP unavailable on server), go straight to login
-      if (response.is_verified) {
-        // Auto-login after registration
-        try {
-          const loginResponse = await authService.login(
-            `username=${encodeURIComponent(email.trim().toLowerCase())}&password=${encodeURIComponent(password)}`
-          );
-          await login(loginResponse.access_token, { name, email: email.trim().toLowerCase() });
-        } catch {
-          // If auto-login fails, just go to login screen
-          router.replace('/login' as any);
-        }
+
+      // 2. Prepare for email verification
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setPendingVerification(true);
+    } catch (err: any) {
+      setError(err.errors?.[0]?.message || 'Failed to create account');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!isLoaded) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const completeSignUp = await signUp.attemptEmailAddressVerification({
+        code,
+      });
+
+      if (completeSignUp.status === 'complete') {
+        await setActive({ session: completeSignUp.createdSessionId });
+        router.replace('/(tabs)');
       } else {
-        // Email verification required
-        router.push({ pathname: '/verify', params: { email: email.trim().toLowerCase() } });
+        console.error(JSON.stringify(completeSignUp, null, 2));
+        setError('Verification failed');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'An error occurred';
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      setError(err.errors?.[0]?.message || 'Invalid verification code');
     } finally {
       setIsLoading(false);
     }
@@ -63,8 +77,12 @@ export default function RegisterScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Sign up to start tracking your expenses</Text>
+          <Text style={styles.title}>{pendingVerification ? 'Verify Email' : 'Create Account'}</Text>
+          <Text style={styles.subtitle}>
+            {pendingVerification 
+              ? `Enter the code sent to ${email}` 
+              : 'Sign up to start tracking your expenses'}
+          </Text>
         </View>
 
         {error ? (
@@ -73,71 +91,102 @@ export default function RegisterScreen() {
           </View>
         ) : null}
 
-        <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Full Name</Text>
-            <View style={styles.inputContainer}>
-              <User size={20} color={theme.colors.onSurfaceTertiary} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your name"
-                placeholderTextColor={theme.colors.onSurfaceTertiary}
-                value={name}
-                onChangeText={setName}
-              />
+        {!pendingVerification ? (
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Full Name</Text>
+              <View style={styles.inputContainer}>
+                <User size={20} color={theme.colors.onSurfaceTertiary} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your name"
+                  placeholderTextColor={theme.colors.onSurfaceTertiary}
+                  value={name}
+                  onChangeText={setName}
+                />
+              </View>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
-            <View style={styles.inputContainer}>
-              <EnvelopeSimple size={20} color={theme.colors.onSurfaceTertiary} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor={theme.colors.onSurfaceTertiary}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email Address</Text>
+              <View style={styles.inputContainer}>
+                <EnvelopeSimple size={20} color={theme.colors.onSurfaceTertiary} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor={theme.colors.onSurfaceTertiary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputContainer}>
-              <Lock size={20} color={theme.colors.onSurfaceTertiary} />
-              <TextInput
-                style={styles.input}
-                placeholder="Create a password"
-                placeholderTextColor={theme.colors.onSurfaceTertiary}
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? (
-                  <EyeSlash size={20} color={theme.colors.onSurfaceTertiary} />
-                ) : (
-                  <Eye size={20} color={theme.colors.onSurfaceTertiary} />
-                )}
-              </TouchableOpacity>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputContainer}>
+                <Lock size={20} color={theme.colors.onSurfaceTertiary} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Create a password"
+                  placeholderTextColor={theme.colors.onSurfaceTertiary}
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  {showPassword ? (
+                    <EyeSlash size={20} color={theme.colors.onSurfaceTertiary} />
+                  ) : (
+                    <Eye size={20} color={theme.colors.onSurfaceTertiary} />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
 
-          <TouchableOpacity 
-            style={[styles.loginBtn, isLoading && styles.loginBtnDisabled]} 
-            onPress={handleRegister}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color={theme.colors.onBrandPrimary} />
-            ) : (
-              <Text style={styles.loginBtnText}>Sign Up</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity 
+              style={[styles.loginBtn, isLoading && styles.loginBtnDisabled]} 
+              onPress={handleRegister}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={theme.colors.onBrandPrimary} />
+              ) : (
+                <Text style={styles.loginBtnText}>Sign Up</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Verification Code</Text>
+              <View style={styles.inputContainer}>
+                <Lock size={20} color={theme.colors.onSurfaceTertiary} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter verification code"
+                  placeholderTextColor={theme.colors.onSurfaceTertiary}
+                  keyboardType="number-pad"
+                  value={code}
+                  onChangeText={setCode}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.loginBtn, isLoading && styles.loginBtnDisabled]} 
+              onPress={handleVerify}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={theme.colors.onBrandPrimary} />
+              ) : (
+                <Text style={styles.loginBtnText}>Verify Email</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Already have an account? </Text>

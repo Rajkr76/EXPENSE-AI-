@@ -3,13 +3,13 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, Activity
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { theme } from '../../constants/theme';
-import { useAuth } from '../../context/AuthContext';
-import { authService, api } from '../../services/api';
 import { EnvelopeSimple, Lock, Eye, EyeSlash } from 'phosphor-react-native';
+import { useSignIn } from '@clerk/clerk-expo';
+import * as Linking from 'expo-linking';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { signIn, setActive, isLoaded } = useSignIn();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,6 +18,8 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
+    if (!isLoaded) return;
+    
     if (!email || !password) {
       setError('Please fill in all fields');
       return;
@@ -27,23 +29,22 @@ export default function LoginScreen() {
     setError('');
     
     try {
-      // Use the centralized api service (auto-detects local vs production URL)
-      const data = await authService.login(
-        `username=${encodeURIComponent(email.trim().toLowerCase())}&password=${encodeURIComponent(password)}`
-      );
-      
-      // Get user info using the api service
-      const userResponse = await api.get('/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${data.access_token}`
-        }
+      const signInAttempt = await signIn.create({
+        identifier: email,
+        password,
       });
-      
-      await login(data.access_token, userResponse.data);
-      // The router will automatically redirect to /(tabs) via _layout.tsx
+
+      if (signInAttempt.status === 'complete') {
+        await setActive({ session: signInAttempt.createdSessionId });
+        router.replace('/(tabs)');
+      } else {
+        // If MFA is required or other steps, it handles it here.
+        // For now, we assume simple password auth.
+        console.error('Sign in not complete: ', signInAttempt);
+        setError('Sign in requires additional steps not supported here.');
+      }
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Failed to login';
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      setError(err.errors?.[0]?.message || 'Failed to login. Check your credentials.');
     } finally {
       setIsLoading(false);
     }

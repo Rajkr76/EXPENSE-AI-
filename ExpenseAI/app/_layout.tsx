@@ -6,18 +6,22 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { AuthProvider } from '@/context/AuthContext';
-
+import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/clerk-expo';
+import { tokenCache } from '../cache';
 import { useColorScheme } from 'react-native';
 import { theme } from '@/constants/theme';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
+import { setAuthToken } from '@/services/api';
 
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
+if (!publishableKey) {
+  throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in .env');
+}
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
@@ -49,36 +53,55 @@ export default function RootLayout() {
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={customTheme}>
-        <AuthProvider>
-          <BottomSheetModalProvider>
-            <RootLayoutNav />
-          </BottomSheetModalProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider value={customTheme}>
+          <ClerkLoaded>
+            <BottomSheetModalProvider>
+              <RootLayoutNav />
+            </BottomSheetModalProvider>
+          </ClerkLoaded>
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    </ClerkProvider>
   );
 }
 
 function RootLayoutNav() {
-  const { user, isLoading } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoading) return;
+    // Sync the Clerk JWT token with our Axios api instance
+    const syncToken = async () => {
+      if (isSignedIn) {
+        try {
+          const token = await getToken();
+          setAuthToken(token);
+        } catch (e) {
+          setAuthToken(null);
+        }
+      } else {
+        setAuthToken(null);
+      }
+    };
+    syncToken();
+  }, [isSignedIn, getToken]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
-    if (!user && !inAuthGroup) {
+    if (!isSignedIn && !inAuthGroup) {
       // Redirect to the sign-in page.
       router.replace('/(auth)/login');
-    } else if (user && inAuthGroup) {
+    } else if (isSignedIn && inAuthGroup) {
       // Redirect away from the sign-in page.
       router.replace('/(tabs)');
     }
-  }, [user, isLoading, segments]);
+  }, [isSignedIn, isLoaded, segments]);
 
   return (
     <Stack>

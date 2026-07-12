@@ -3,13 +3,14 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../constants/theme';
 import { CaretRight, UserCircle, Bell, ShieldCheck, Export, ChartPieSlice, SignOut, Trash } from 'phosphor-react-native';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 import { expenseService, incomeService } from '../../services/api';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { signOut } = useAuth();
+  const { user } = useUser();
   const [isExporting, setIsExporting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
@@ -105,10 +106,10 @@ export default function ProfileScreen() {
         {/* Profile Header */}
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase() || 'U'}</Text>
+            <Text style={styles.avatarText}>{user?.firstName?.charAt(0).toUpperCase() || 'U'}</Text>
           </View>
-          <Text style={styles.name}>{user?.name || 'User'}</Text>
-          <Text style={styles.email}>{user?.email || ''}</Text>
+          <Text style={styles.name}>{user?.firstName || 'User'}</Text>
+          <Text style={styles.email}>{user?.primaryEmailAddress?.emailAddress || ''}</Text>
           <TouchableOpacity style={styles.editBtn}>
             <Text style={styles.editBtnText}>Edit Profile</Text>
           </TouchableOpacity>
@@ -182,7 +183,7 @@ export default function ProfileScreen() {
         </View>
         
         {/* Sign Out */}
-        <TouchableOpacity style={styles.signOutBtn} onPress={logout}>
+        <TouchableOpacity style={styles.signOutBtn} onPress={() => signOut()}>
           <SignOut size={24} color={theme.colors.expense} weight="bold" />
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>

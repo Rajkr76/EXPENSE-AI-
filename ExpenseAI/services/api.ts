@@ -40,21 +40,14 @@ export const api = axios.create({
   timeout: 60000, // 60 seconds to allow Render free tier to wake up
 });
 
-// Interceptor to add auth token
-api.interceptors.request.use(
-  async (config) => {
-    try {
-      const token = await SecureStore.getItemAsync('userToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    } catch (e) {
-      // SecureStore not ready yet, skip token
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Expose a function to set the auth token dynamically
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+};
 
 // Add a response interceptor to catch timeouts and network errors
 api.interceptors.response.use(
@@ -91,32 +84,8 @@ export const expenseService = {
   }
 };
 
-export const authService = {
-  login: async (credentials: any) => {
-    const response = await api.post('/auth/login', credentials, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    });
-    return response.data;
-  },
-  register: async (userData: any) => {
-    const response = await api.post('/auth/register', userData);
-    return response.data;
-  },
-  verifyEmail: async (email: string, code: string) => {
-    const response = await api.post('/auth/verify-email', { email, code });
-    return response.data;
-  },
-  forgotPassword: async (email: string) => {
-    const response = await api.post('/auth/forgot-password', { email });
-    return response.data;
-  },
-  resetPassword: async (email: string, code: string, new_password: string) => {
-    const response = await api.post('/auth/reset-password', { email, code, new_password });
-    return response.data;
-  }
-};
+// Auth service is now handled directly by Clerk components
+// The backend will verify Clerk JWT tokens using the JWKS endpoint
 
 export const aiService = {
   chat: async (query: string) => {
