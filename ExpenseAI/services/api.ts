@@ -5,27 +5,28 @@ import Constants from 'expo-constants';
 
 // Determine the API base URL based on environment
 function getBaseUrl(): string {
-  // In development (Expo Go), use local network IP
+  // 1. Prefer environment variable if set (allows easy overriding to Render URL in dev)
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // 2. In development (Expo Go), use local network IP if backend is running locally
   const isDev = __DEV__;
   
   if (isDev) {
-    // When running in Expo Go on a physical device, use your computer's local IP
-    // The debuggerHost from Expo tells us the dev machine's IP
     const debuggerHost = Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoGo?.debuggerHost;
     const localIp = debuggerHost?.split(':')[0];
     
     if (localIp) {
       return `http://${localIp}:8000/api`;
     }
-    // Fallback for Android emulator
     if (Platform.OS === 'android') {
       return 'http://10.0.2.2:8000/api';
     }
-    // Fallback for iOS simulator
     return 'http://localhost:8000/api';
   }
   
-  // Production APK → always use Render
+  // 3. Production APK fallback
   return 'https://expense-ai-3mmo.onrender.com/api';
 }
 
@@ -40,14 +41,29 @@ export const api = axios.create({
   timeout: 60000, // 60 seconds to allow Render free tier to wake up
 });
 
-// Expose a function to set the auth token dynamically
-export const setAuthToken = (token: string | null) => {
-  if (token) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  } else {
-    delete api.defaults.headers.common['Authorization'];
-  }
+// Global reference to Clerk's getToken function
+let getTokenFn: (() => Promise<string | null>) | null = null;
+
+export const registerGetToken = (fn: () => Promise<string | null>) => {
+  getTokenFn = fn;
 };
+
+// Add a request interceptor to dynamically inject the token
+api.interceptors.request.use(async (config) => {
+  if (getTokenFn) {
+    try {
+      const token = await getTokenFn();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (e) {
+      console.warn('[API] Failed to get auth token', e);
+    }
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
 
 // Add a response interceptor to catch timeouts and network errors
 api.interceptors.response.use(

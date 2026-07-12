@@ -16,10 +16,17 @@ async def create_or_update_budget(
     db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: UserResponse = Depends(get_current_user)
 ):
-    budget_dict = budget.model_dump()
-    budget_dict["user_id"] = current_user.id
+    # Upsert logic: ADD the amount if exists, else insert
+    update_data = {
+        "$inc": {"amount": budget.amount},
+        "$setOnInsert": {
+            "user_id": current_user.id,
+            "category_id": budget.category_id,
+            "month": budget.month,
+            "year": budget.year
+        }
+    }
     
-    # Upsert logic: Update if exists for this category/month/year, else insert
     result = await db["budgets"].update_one(
         {
             "user_id": current_user.id,
@@ -27,7 +34,7 @@ async def create_or_update_budget(
             "month": budget.month,
             "year": budget.year
         },
-        {"$set": budget_dict},
+        update_data,
         upsert=True
     )
     

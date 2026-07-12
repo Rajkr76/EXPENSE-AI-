@@ -118,14 +118,14 @@ export default function IncomeBudgetScreen() {
         <Text style={styles.sectionTitle}>Category Budgets</Text>
         <TouchableOpacity style={styles.addSmallBtn} onPress={() => setShowBudgetModal(true)}>
           <Plus size={16} color={theme.colors.brandPrimary} weight="bold" />
-          <Text style={styles.addSmallBtnText}>Set Budget</Text>
+          <Text style={styles.addSmallBtnText}>Add to Budget</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.card}>
         {budgets.length === 0 ? (
           <View style={{ padding: 20, alignItems: 'center' }}>
-            <Text style={{ color: theme.colors.onSurfaceTertiary }}>No budgets set. Click 'Set Budget' to start managing expenses.</Text>
+            <Text style={{ color: theme.colors.onSurfaceTertiary }}>No budgets set. Click 'Add to Budget' to start managing expenses.</Text>
           </View>
         ) : (
           budgets.map((budget, index) => {
@@ -223,7 +223,7 @@ export default function IncomeBudgetScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Set Category Budget</Text>
+              <Text style={styles.modalTitle}>Add to Category Budget</Text>
               <TouchableOpacity onPress={() => setShowBudgetModal(false)}>
                 <X size={24} color={theme.colors.onSurface} />
               </TouchableOpacity>

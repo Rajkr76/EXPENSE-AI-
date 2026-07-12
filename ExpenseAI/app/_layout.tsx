@@ -15,7 +15,7 @@ import { theme } from '@/constants/theme';
 SplashScreen.preventAutoHideAsync();
 
 import { useRouter, useSegments } from 'expo-router';
-import { setAuthToken } from '@/services/api';
+import { registerGetToken } from '@/services/api';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
@@ -73,21 +73,10 @@ function RootLayoutNav() {
   const router = useRouter();
 
   useEffect(() => {
-    // Sync the Clerk JWT token with our Axios api instance
-    const syncToken = async () => {
-      if (isSignedIn) {
-        try {
-          const token = await getToken();
-          setAuthToken(token);
-        } catch (e) {
-          setAuthToken(null);
-        }
-      } else {
-        setAuthToken(null);
-      }
-    };
-    syncToken();
-  }, [isSignedIn, getToken]);
+    // Register the Clerk getToken function with our Axios API instance
+    // so it dynamically fetches a fresh token before every API request!
+    registerGetToken(getToken);
+  }, [getToken]);
 
   useEffect(() => {
     if (!isLoaded) return;
