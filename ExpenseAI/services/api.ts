@@ -33,7 +33,7 @@ const BASE_URL = getBaseUrl();
 console.log('[API] Using base URL:', BASE_URL);
 
 export const api = axios.create({
-  baseURL: `${BASE_URL}/api`,
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -80,7 +80,7 @@ api.interceptors.response.use(
 // Services
 export const expenseService = {
   getExpenses: async (month?: number, year?: number) => {
-    let url = '/expenses/';
+    let url = '/api/expenses/';
     if (month && year) {
       url += `?month=${month}&year=${year}`;
     }
@@ -88,14 +88,14 @@ export const expenseService = {
     return response.data;
   },
   addExpense: async (expense: any) => {
-    const response = await api.post('/expenses/', expense);
+    const response = await api.post('/api/expenses/', expense);
     return response.data;
   },
   deleteExpense: async (id: string) => {
-    await api.delete(`/expenses/${id}`);
+    await api.delete(`/api/expenses/${id}`);
   },
   deleteAllExpenses: async () => {
-    await api.delete('/expenses/all');
+    await api.delete('/api/expenses/all');
   }
 };
 
@@ -104,18 +104,22 @@ export const expenseService = {
 
 export const aiService = {
   chat: async (query: string) => {
-    const response = await api.post('/ai/chat', { query });
+    const response = await api.post('/api/ai/chat', { query });
     return response.data;
   },
   getInsight: async () => {
-    const response = await api.get('/ai/insight');
+    const response = await api.get('/api/ai/insight');
+    return response.data;
+  },
+  scanText: async (text: string) => {
+    const response = await api.post('/api/ai/scan-text', { text });
     return response.data;
   }
 };
 
 export const incomeService = {
   getIncomes: async (month?: number, year?: number) => {
-    let url = '/income/';
+    let url = '/api/income/';
     if (month && year) {
       url += `?month=${month}&year=${year}`;
     }
@@ -123,24 +127,24 @@ export const incomeService = {
     return response.data;
   },
   addIncome: async (income: any) => {
-    const response = await api.post('/income/', income);
+    const response = await api.post('/api/income/', income);
     return response.data;
   },
   deleteIncome: async (id: string) => {
-    await api.delete(`/income/${id}`);
+    await api.delete(`/api/income/${id}`);
   },
   deleteAllIncomes: async () => {
-    await api.delete('/income/all');
+    await api.delete('/api/income/all');
   }
 };
 
 export const budgetService = {
   getBudgets: async (month: number, year: number) => {
-    const response = await api.get(`/budget/?month=${month}&year=${year}`);
+    const response = await api.get(`/api/budget/?month=${month}&year=${year}`);
     return response.data;
   },
   setBudget: async (budget: { category_id: string; amount: number; month: number; year: number }) => {
-    const response = await api.post('/budget/', budget);
+    const response = await api.post('/api/budget/', budget);
     return response.data;
   }
 };
