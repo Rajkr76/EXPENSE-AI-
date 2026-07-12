@@ -36,6 +36,12 @@ jobs:
         working-directory: ./ExpenseAI
         run: npm install --legacy-peer-deps
 
+      - name: Create .env file for Expo
+        working-directory: ./ExpenseAI
+        run: |
+          echo "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}" > .env
+          echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}" >> .env
+
       - name: Expo Prebuild (Generate Android Project)
         working-directory: ./ExpenseAI
         run: npx expo prebuild --platform android --clean --no-install
