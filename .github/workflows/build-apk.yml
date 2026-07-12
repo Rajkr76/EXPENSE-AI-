@@ -38,7 +38,7 @@ jobs:
 
       - name: Expo Prebuild (Generate Android Project)
         working-directory: ./ExpenseAI
-        run: npx expo prebuild --platform android --clean
+        run: npx expo prebuild --platform android --clean --no-install
 
       - name: Build APK (Gradle)
         working-directory: ./ExpenseAI/android
