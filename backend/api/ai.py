@@ -6,7 +6,7 @@ from typing import List
 from db.database import get_db
 from models.user import UserResponse
 from api.auth import get_current_user
-from services.ai_service import get_financial_advice, extract_receipt_data, get_daily_insight
+from services.ai_service import get_financial_advice, extract_receipt_data, get_daily_insight, extract_text_data
 
 router = APIRouter()
 
@@ -63,6 +63,23 @@ async def scan_receipt(
         result = await extract_receipt_data(image_bytes, mime_type)
         if not result:
             raise HTTPException(status_code=500, detail="Failed to parse receipt")
+        
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class TextScanRequest(BaseModel):
+    text: str
+
+@router.post("/scan-text")
+async def scan_text(
+    request: TextScanRequest,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    try:
+        result = await extract_text_data(request.text)
+        if not result:
+            raise HTTPException(status_code=500, detail="Failed to parse text")
         
         return result
     except Exception as e:

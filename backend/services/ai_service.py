@@ -62,6 +62,48 @@ async def extract_receipt_data(image_bytes: bytes, mime_type: str) -> dict:
         print(f"Groq OCR Error: {e}")
         return None
 
+async def extract_text_data(text_content: str) -> dict:
+    """
+    Calls Groq to extract receipt/transaction details from SMS or raw text.
+    """
+    prompt = f"""Extract the following details from this transaction message or text:
+    - amount: total amount as a float (ignore currency symbols)
+    - merchant: name of the store, person, or merchant
+    - date: date of transaction in YYYY-MM-DD (guess today's date if not present)
+    - category: guess a short category string from [food, transport, shopping, housing, utilities, medical, entertainment, salary, default]
+    
+    Text: "{text_content}"
+    
+    Return ONLY valid JSON in this exact format, nothing else:
+    {{"amount": 12.50, "merchant": "Store Name", "date": "2024-01-01", "category": "food"}}"""
+    
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            max_tokens=300,
+        )
+        
+        text = response.choices[0].message.content.strip()
+        
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+            
+        return json.loads(text.strip())
+    except Exception as e:
+        print(f"Groq Text Extraction Error: {e}")
+        return None
+
+
 async def get_financial_advice(query: str, user_data_context: str) -> str:
     """
     Calls Groq to act as a financial advisor based on user's query and their data context.

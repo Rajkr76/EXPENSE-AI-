@@ -1,78 +1,35 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { theme } from '../constants/theme';
 import { CATEGORIES } from '../constants/categories';
-import { X, Sparkle, Camera, Check, Image as ImageIcon } from 'phosphor-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
+import { X, Sparkle, Check, TextAa } from 'phosphor-react-native';
 import { api, expenseService } from '../services/api';
 
-export default function ReceiptScannerScreen() {
+export default function TextScannerScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const autoScanUri = params.autoScanUri as string | undefined;
-
+  const textContent = params.textContent as string | undefined;
+  
   const [isScanning, setIsScanning] = useState(false);
   const [scannedData, setScannedData] = useState<any>(null);
-  const [imageUri, setImageUri] = useState<string | null>(autoScanUri || null);
   
   // Fields state (populated after scan)
   const [amount, setAmount] = useState('');
   const [merchant, setMerchant] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  React.useEffect(() => {
-    if (autoScanUri) {
-      processImage({ uri: autoScanUri } as ImagePicker.ImagePickerAsset);
+  useEffect(() => {
+    if (textContent) {
+      processText(textContent);
     }
-  }, [autoScanUri]);
+  }, [textContent]);
 
-  const pickImage = async (useCamera: boolean = false) => {
-    try {
-      let result;
-      if (useCamera) {
-        await ImagePicker.requestCameraPermissionsAsync();
-        result = await ImagePicker.launchCameraAsync({
-          allowsEditing: true,
-          quality: 0.7,
-        });
-      } else {
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.7,
-        });
-      }
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImageUri(result.assets[0].uri);
-        processImage(result.assets[0]);
-      }
-    } catch (e) {
-      console.error("Image picker error:", e);
-    }
-  };
-
-  const processImage = async (asset: ImagePicker.ImagePickerAsset) => {
+  const processText = async (text: string) => {
     setIsScanning(true);
     try {
-      const formData = new FormData();
-      
-      formData.append('file', {
-        uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
-        name: 'receipt.jpg',
-        type: 'image/jpeg',
-      } as any);
-
-      const response = await api.post('/ai/scan-receipt', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
+      const response = await api.post('/ai/scan-text', { text });
       const data = response.data;
       
       setScannedData(true);
@@ -82,7 +39,7 @@ export default function ReceiptScannerScreen() {
       
     } catch (e) {
       console.error("Scan error:", e);
-      alert('Failed to process receipt with AI. Try again.');
+      alert('Failed to process text with AI. Try again.');
     } finally {
       setIsScanning(false);
     }
@@ -104,7 +61,7 @@ export default function ReceiptScannerScreen() {
         merchant: merchant,
         category_id: selectedCategory || 'other_expense',
         date: new Date().toISOString().split('T')[0],
-        notes: 'Scanned via AI receipt scanner',
+        notes: 'Extracted from shared text',
       });
       
       alert('Expense saved!');
@@ -124,7 +81,7 @@ export default function ReceiptScannerScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
             <X size={24} color={theme.colors.onSurface} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>AI Receipt Scanner</Text>
+          <Text style={styles.headerTitle}>AI Text Scanner</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -133,34 +90,14 @@ export default function ReceiptScannerScreen() {
           {!scannedData ? (
             <View style={styles.scanState}>
               <View style={styles.receiptPlaceholder}>
-                {imageUri ? (
-                  <Image source={{ uri: imageUri }} style={styles.fullImage} resizeMode="contain" />
-                ) : (
-                  <>
-                    <Camera size={48} color={theme.colors.onSurfaceTertiary} />
-                    <Text style={styles.placeholderText}>Receipt Image</Text>
-                  </>
-                )}
+                <TextAa size={48} color={theme.colors.onSurfaceTertiary} />
+                <Text style={styles.placeholderText}>Analyzing Text...</Text>
               </View>
-              
-              {!isScanning && !imageUri && (
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity style={styles.actionBtn} onPress={() => pickImage(true)}>
-                    <Camera size={24} color={theme.colors.onBrandPrimary} weight="fill" />
-                    <Text style={styles.actionBtnText}>Take Photo</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity style={[styles.actionBtn, styles.galleryBtn]} onPress={() => pickImage(false)}>
-                    <ImageIcon size={24} color={theme.colors.brandPrimary} weight="fill" />
-                    <Text style={[styles.actionBtnText, styles.galleryBtnText]}>Gallery</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
               
               {isScanning && (
                 <View style={styles.scanningContainer}>
                   <ActivityIndicator color={theme.colors.brandSecondary} size="large" />
-                  <Text style={styles.scanningText}>Gemini is analyzing your receipt...</Text>
+                  <Text style={styles.scanningText}>Gemini is analyzing your text...</Text>
                 </View>
               )}
             </View>
@@ -182,7 +119,7 @@ export default function ReceiptScannerScreen() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Merchant</Text>
+                <Text style={styles.label}>Merchant / Sender</Text>
                 <TextInput
                   style={styles.input}
                   value={merchant}
@@ -222,8 +159,12 @@ export default function ReceiptScannerScreen() {
         
         {scannedData && (
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-              <Text style={styles.saveBtnText}>Save Expense</Text>
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <ActivityIndicator color={theme.colors.onBrandPrimary} />
+              ) : (
+                <Text style={styles.saveBtnText}>Save Expense</Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -279,24 +220,6 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     fontFamily: theme.typography.mediumFontFamily,
     color: theme.colors.onSurfaceTertiary,
-  },
-  scanBtn: {
-    width: '100%',
-    borderRadius: theme.radius.xl,
-    overflow: 'hidden',
-    ...theme.shadows.tier1,
-  },
-  scanBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: theme.spacing.lg,
-    gap: theme.spacing.sm,
-  },
-  scanBtnText: {
-    color: theme.colors.onBrandSecondary,
-    fontSize: theme.typography.scale.base,
-    fontFamily: theme.typography.semiBoldFontFamily,
   },
   scanningText: {
     marginTop: theme.spacing.lg,
@@ -393,39 +316,6 @@ const styles = StyleSheet.create({
     color: theme.colors.onBrandPrimary,
     fontSize: theme.typography.scale.base,
     fontFamily: theme.typography.semiBoldFontFamily,
-  },
-  fullImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: theme.radius.xl,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-    width: '100%',
-  },
-  actionBtn: {
-    flex: 1,
-    backgroundColor: theme.colors.surfaceTertiary,
-    borderRadius: theme.radius.xl,
-    paddingVertical: theme.spacing.lg,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
-  actionBtnText: {
-    color: theme.colors.onSurface,
-    fontFamily: theme.typography.semiBoldFontFamily,
-    fontSize: theme.typography.scale.base,
-  },
-  galleryBtn: {
-    backgroundColor: `${theme.colors.brandPrimary}15`,
-    borderWidth: 1,
-    borderColor: `${theme.colors.brandPrimary}30`,
-  },
-  galleryBtnText: {
-    color: theme.colors.brandPrimary,
   },
   scanningContainer: {
     alignItems: 'center',

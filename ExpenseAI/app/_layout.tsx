@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/clerk-expo';
+import { ShareIntentProvider, useShareIntent } from 'expo-share-intent';
 import { tokenCache } from '../cache';
 import { useColorScheme } from 'react-native';
 import { theme } from '@/constants/theme';
@@ -56,11 +57,13 @@ export default function RootLayout() {
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider value={customTheme}>
-          <ClerkLoaded>
-            <BottomSheetModalProvider>
-              <RootLayoutNav />
-            </BottomSheetModalProvider>
-          </ClerkLoaded>
+          <ShareIntentProvider>
+            <ClerkLoaded>
+              <BottomSheetModalProvider>
+                <RootLayoutNav />
+              </BottomSheetModalProvider>
+            </ClerkLoaded>
+          </ShareIntentProvider>
         </ThemeProvider>
       </GestureHandlerRootView>
     </ClerkProvider>
@@ -92,6 +95,21 @@ function RootLayoutNav() {
     }
   }, [isSignedIn, isLoaded, segments]);
 
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent();
+  
+  useEffect(() => {
+    if (isSignedIn && hasShareIntent && shareIntent) {
+      // We received a share intent from outside the app! 
+      // Navigate to the handler screen and pass the intent type/value
+      router.push({
+        pathname: '/share-handler',
+        params: { type: shareIntent.type, value: shareIntent.value }
+      });
+      // Important: reset the intent so we don't trigger this endlessly
+      resetShareIntent();
+    }
+  }, [isSignedIn, hasShareIntent, shareIntent]);
+
   return (
     <Stack>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -99,6 +117,8 @@ function RootLayoutNav() {
       <Stack.Screen name="add-manual" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="ai-chat" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="receipt-scanner" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="text-scanner" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="share-handler" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
