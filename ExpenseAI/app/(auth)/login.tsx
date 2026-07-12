@@ -38,10 +38,9 @@ export default function LoginScreen() {
         await setActive({ session: signInAttempt.createdSessionId });
         router.replace('/(tabs)');
       } else {
-        // If MFA is required or other steps, it handles it here.
-        // For now, we assume simple password auth.
+        // If MFA is required or email is unverified, Clerk stops here.
         console.error('Sign in not complete: ', signInAttempt);
-        setError('Sign in requires additional steps not supported here.');
+        setError(`Sign in requires additional steps. Status: ${signInAttempt.status}. If your email is unverified, please sign up again.`);
       }
     } catch (err: any) {
       setError(err.errors?.[0]?.message || 'Failed to login. Check your credentials.');
