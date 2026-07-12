@@ -2,8 +2,8 @@ name: Build Android APK and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       tag_name:
@@ -54,8 +54,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: ./ExpenseAI/android/app/build/outputs/apk/release/app-release.apk
-          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
-          name: Release ${{ github.event.inputs.tag_name || github.ref_name }}
+          tag_name: v1.0.${{ github.run_number }}
+          name: Release v1.0.${{ github.run_number }}
           draft: false
           prerelease: false
           generate_release_notes: true

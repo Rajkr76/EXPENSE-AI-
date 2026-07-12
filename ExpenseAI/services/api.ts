@@ -5,40 +5,39 @@ import Constants from 'expo-constants';
 
 // Determine the API base URL based on environment
 function getBaseUrl(): string {
-  // 1. Prefer environment variable if set (allows easy overriding to Render URL in dev)
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+  let url = process.env.EXPO_PUBLIC_API_URL;
+  
+  if (!url) {
+    const isDev = __DEV__;
+    if (isDev) {
+      const debuggerHost = Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoGo?.debuggerHost;
+      const localIp = debuggerHost?.split(':')[0];
+      
+      if (localIp) {
+        url = `http://${localIp}:8000`;
+      } else if (Platform.OS === 'android') {
+        url = 'http://10.0.2.2:8000';
+      } else {
+        url = 'http://localhost:8000';
+      }
+    } else {
+      url = 'https://expense-ai-3mmo.onrender.com';
+    }
   }
 
-  // 2. In development (Expo Go), use local network IP if backend is running locally
-  const isDev = __DEV__;
-  
-  if (isDev) {
-    const debuggerHost = Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoGo?.debuggerHost;
-    const localIp = debuggerHost?.split(':')[0];
-    
-    if (localIp) {
-      return `http://${localIp}:8000/api`;
-    }
-    if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:8000/api';
-    }
-    return 'http://localhost:8000/api';
-  }
-  
-  // 3. Production APK fallback
-  return 'https://expense-ai-3mmo.onrender.com/api';
+  // Sanitize the URL: remove trailing slashes and any trailing /api (we will append it cleanly)
+  return url.replace(/\/+$/, '').replace(/\/api$/, '');
 }
 
 const BASE_URL = getBaseUrl();
 console.log('[API] Using base URL:', BASE_URL);
 
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: `${BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 60000, // 60 seconds to allow Render free tier to wake up
+  timeout: 60000,
 });
 
 // Global reference to Clerk's getToken function
