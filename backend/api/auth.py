@@ -9,7 +9,6 @@ from models.user import UserResponse
 from core.config import settings
 
 from clerk_backend_api import Clerk
-from clerk_backend_api.models.components.jwt_template import JWTTemplate
 
 router = APIRouter()
 security = HTTPBearer()
