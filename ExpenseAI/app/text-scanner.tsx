@@ -29,7 +29,7 @@ export default function TextScannerScreen() {
   const processText = async (text: string) => {
     setIsScanning(true);
     try {
-      const response = await api.post('/ai/scan-text', { text });
+      const response = await api.post('/api/ai/scan-text', { text });
       const data = response.data;
       
       setScannedData(true);

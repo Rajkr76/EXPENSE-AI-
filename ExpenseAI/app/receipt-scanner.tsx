@@ -67,7 +67,7 @@ export default function ReceiptScannerScreen() {
         type: 'image/jpeg',
       } as any);
 
-      const response = await api.post('/ai/scan-receipt', formData, {
+      const response = await api.post('/api/ai/scan-receipt', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
